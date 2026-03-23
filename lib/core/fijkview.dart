@@ -110,6 +110,12 @@ class FijkFit {
   static const FijkFit ar16_9 = FijkFit(aspectRatio: 16.0 / 9.0);
 }
 
+enum FijkViewType {
+  auto,
+  texture,
+  platformView,
+}
+
 /// [FijkView] is a widget that can display the video frame of [FijkPlayer].
 ///
 /// Actually, it is a Container widget contains many children.
@@ -121,6 +127,7 @@ class FijkView extends StatefulWidget {
     this.height,
     this.fit = FijkFit.contain,
     this.fsFit = FijkFit.contain,
+    this.viewType = FijkViewType.auto,
     this.panelBuilder = defaultFijkPanelBuilder,
     this.color = const Color(0xFF607D8B),
     this.cover,
@@ -134,6 +141,13 @@ class FijkView extends StatefulWidget {
 
   /// builder to build panel Widget
   final FijkPanelWidgetBuilder panelBuilder;
+
+  /// Video rendering implementation.
+  ///
+  /// `platformView` is required on iOS to keep the native Apple render path,
+  /// which is also the only route that can preserve HDR display capability.
+  /// `auto` defaults to `platformView` on iOS and `texture` on other platforms.
+  final FijkViewType viewType;
 
   /// This method will be called when fijkView dispose.
   /// FijkData is managed inner FijkView. User can change fijkData in custom panel.
@@ -176,6 +190,7 @@ class FijkView extends StatefulWidget {
 
 class _FijkViewState extends State<FijkView> {
   int _textureId = -1;
+  int _playerId = -1;
   double _vWidth = -1;
   double _vHeight = -1;
   bool _fullScreen = false;
@@ -196,10 +211,28 @@ class _FijkViewState extends State<FijkView> {
   }
 
   Future<void> _nativeSetup() async {
-    if (widget.player.value.prepared) {
+    if (_usePlatformView) {
+      final int id = await widget.player.id;
+      if (mounted) {
+        setState(() {
+          _playerId = id;
+        });
+      }
+    } else if (widget.player.value.prepared) {
       _setupTexture();
     }
     paramNotifier.value = paramNotifier.value + 1;
+  }
+
+  bool get _usePlatformView {
+    switch (widget.viewType) {
+      case FijkViewType.texture:
+        return false;
+      case FijkViewType.platformView:
+        return Platform.isIOS;
+      case FijkViewType.auto:
+        return Platform.isIOS;
+    }
   }
 
   void _setupTexture() async {
@@ -218,7 +251,7 @@ class _FijkViewState extends State<FijkView> {
 
   void _fijkValueListener() async {
     FijkValue value = widget.player.value;
-    if (value.prepared && _textureId < 0) {
+    if (!_usePlatformView && value.prepared && _textureId < 0) {
       _setupTexture();
     }
 
@@ -365,6 +398,7 @@ class __InnerFijkViewState extends State<_InnerFijkView> {
   Color? _color;
   FijkFit _fit = FijkFit.contain;
   int _textureId = -1;
+  int _playerId = -1;
   double _vWidth = -1;
   double _vHeight = -1;
   bool _vFullScreen = false;
@@ -385,9 +419,7 @@ class __InnerFijkViewState extends State<_InnerFijkView> {
   FijkView get fView => widget.fijkViewState.widget;
 
   void _voidValueListener() {
-    var binding = WidgetsBinding.instance;
-    if (binding != null)
-      binding.addPostFrameCallback((_) => _fijkValueListener());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fijkValueListener());
   }
 
   void _fijkValueListener() {
@@ -500,6 +532,17 @@ class __InnerFijkViewState extends State<_InnerFijkView> {
   }
 
   Widget buildTexture() {
+    if (_usePlatformView) {
+      if (_playerId < 0 || !_player.value.prepared) {
+        return Container();
+      }
+      return UiKitView(
+        viewType: 'befovy.com/fijkplayer_max/player_view',
+        creationParams: <String, dynamic>{'pid': _playerId},
+        creationParamsCodec: const StandardMessageCodec(),
+      );
+    }
+
     Widget tex = _textureId > 0 ? Texture(textureId: _textureId) : Container();
     if (_degree != 0 && _textureId > 0) {
       return RotatedBox(
@@ -514,7 +557,9 @@ class __InnerFijkViewState extends State<_InnerFijkView> {
   void dispose() {
     super.dispose();
     fView.player.removeListener(_fijkValueListener);
-    widget.fijkViewState.paramNotifier.removeListener(_fijkValueListener);
+    if (widget.fullScreen) {
+      widget.fijkViewState.paramNotifier.removeListener(_voidValueListener);
+    }
   }
 
   @override
@@ -523,6 +568,7 @@ class __InnerFijkViewState extends State<_InnerFijkView> {
     _color = fView.color;
     _fit = widget.fullScreen ? fView.fsFit : fView.fit;
     _textureId = widget.fijkViewState._textureId;
+    _playerId = widget.fijkViewState._playerId;
 
     FijkValue value = _player.value;
     FijkData data = widget.data;
@@ -572,4 +618,6 @@ class __InnerFijkViewState extends State<_InnerFijkView> {
       );
     });
   }
+
+  bool get _usePlatformView => widget.fijkViewState._usePlatformView;
 }

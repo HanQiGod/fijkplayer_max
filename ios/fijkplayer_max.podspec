@@ -30,5 +30,5 @@ Flutter plugin for ijkplayer
 
   s.dependency 'BIJKPlayer', '~> 0.7.16'
 
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '13.0'
 end

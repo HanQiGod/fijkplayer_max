@@ -22,11 +22,19 @@
 
 #import <Flutter/Flutter.h>
 
+@class FijkPlayer;
+
+NS_ASSUME_NONNULL_BEGIN
+
 @interface FijkPlugin : NSObject <FlutterPlugin, FlutterStreamHandler>
 
 @property int playingCnt;
 @property int playableCnt;
 
-+ (FijkPlugin *)singleInstance;
++ (nullable FijkPlugin *)singleInstance;
+
+- (nullable FijkPlayer *)playerForId:(NSNumber *)playerId;
 
 @end
+
+NS_ASSUME_NONNULL_END

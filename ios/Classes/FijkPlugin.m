@@ -22,6 +22,7 @@
 
 #import "FijkPlugin.h"
 #import "FijkPlayer.h"
+#import "FijkPlayerView.h"
 #import "FijkQueuingEventSink.h"
 
 #import <AVKit/AVKit.h>
@@ -62,11 +63,13 @@ static FijkPlugin *_instance = nil;
     FijkPlugin *instance = [[FijkPlugin alloc] initWithRegistrar:registrar];
     _instance = instance;
     [registrar addMethodCallDelegate:instance channel:channel];
-
-    FijkPlayer *player = [[FijkPlayer alloc] initJustTexture];
-    int64_t vid = [[registrar textures] registerTexture:player];
-    [player shutdown];
-    [[registrar textures] unregisterTexture:vid];
+    FijkPlayerViewFactory *factory = [[FijkPlayerViewFactory alloc]
+           initWithMessenger:[registrar messenger]
+               playerProvider:^FijkPlayer *(NSNumber *playerId) {
+                 return [[FijkPlugin singleInstance] playerForId:playerId];
+               }];
+    [registrar registerViewFactory:factory
+                            withId:@"befovy.com/fijkplayer_max/player_view"];
 }
 
 + (FijkPlugin *)singleInstance {
@@ -97,6 +100,10 @@ static FijkPlugin *_instance = nil;
                  object:nil];
     }
     return self;
+}
+
+- (FijkPlayer *)playerForId:(NSNumber *)playerId {
+    return [_fijkPlayers objectForKey:playerId];
 }
 
 - (void)handleMethodCall:(FlutterMethodCall *)call

@@ -24,19 +24,19 @@
 #import <IJKMediaPlayer/IJKMediaPlayer.h>
 
 #import <Flutter/FlutterPlugin.h>
+#import <UIKit/UIKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface FijkPlayer : NSObject <FlutterStreamHandler, IJKMPEventHandler,
-                                  FlutterTexture, IJKCVPBViewProtocol>
+@interface FijkPlayer : NSObject <FlutterStreamHandler>
 
 @property(atomic, readonly) NSNumber *playerId;
 
 - (instancetype)initWithRegistrar:(id<FlutterPluginRegistrar>)registrar;
 
-- (instancetype)initJustTexture;
-
 - (void)shutdown;
+
+- (nullable UIView *)playerView;
 
 @end
 
