@@ -1,5 +1,5 @@
 name: fijkplayer_max
-description: Flutter 升级 3.35.7 之后，对 fijkplayer 插件的升级（After Flutter upgrade 3.35.7, the upgrade of fijkplayer plugins.）。
+description: Flutter 升级 3.35.7 之后，对 fijkplayer 插件的升级，并支持苹果HDR显示并重构播放器架构。（After Flutter upgrade 3.35.7, the upgrade of fijkplayer plugins, And supports Apple HDR display and reconstructs the player architecture.）
 version: 1.0.0
 homepage: https://github.com/HanQiGod/fijkplayer_max
 
